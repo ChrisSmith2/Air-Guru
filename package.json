@@ -1,0 +1,12 @@
+{
+  "name": "alexa-skill-air-guru",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "alexa-sdk": "^1.0.25",
+    "moment": "^2.22.2",
+    "moment-timezone": "^0.5.21",
+    "request": "^2.88.0",
+    "ssml-builder": "^0.4.3"
+  }
+}
