@@ -47,9 +47,11 @@ const handlers = {
 								moment.tz.setDefault("America/Chicago");
 								var today = moment();
 								var dataFound = false;
+								var PM25Data;
+								var OzoneData;
 								for (var i = 0; i < data.length; i++) {
 									var date = moment(data[i].validDate, "MM-DD-YY");
-									if (today.isSame(date, 'day') && data[i].parameter == "PM2.5") {
+									if (today.isSame(date, 'day') && ((data[i].parameter == "PM2.5" && !PM25Data) || (data[i].parameter == "OZONE" && !OzoneData))) {
 										console.log("today:", today.format());
 										console.log("date:", date.format());
 										var aqi = data[i].aqi;
@@ -57,24 +59,50 @@ const handlers = {
 										var region = data[i].reportingArea;
 										console.log("aqi: " + aqi);
 										console.log("category: " + category);
-										if (category && aqi) {
-											speechOutput = `Currently, in ${region}, the air quality is ${category}, with an air quality index of ${aqi}.`;
-										} else if (category) {
-											speechOutput = `Currently, in ${region}, the air quality is ${category}.`;
-										} else {
-											continue;
+										console.log("parameter: " + data[i].parameter);
+										// console.log(data[i]);
+										if (category && aqi || category) {
+											if (data[i].parameter == "PM2.5")
+												PM25Data = data[i];
+											else
+												OzoneData = data[i];
 										}
 
-										self.emit(":tell", speechOutput);
 
 										dataFound = true;
-										break;
+										if (PM25Data && OzoneData)
+											break;
 									}
 								}
 
 								if (!dataFound) {
-									speechOutput = "Sorry, I was unable to get the current air quality in your location."
+									speechOutput = "Sorry, I was unable to get the air quality in your location."
+
 									self.emit(":tell", speechOutput);
+								} else {
+									var data;
+									if (PM25Data && OzoneData && PM25Data.aqi && OzoneData.aqi) {
+										data = PM25Data.aqi >= OzoneData.aqi ? PM25Data : OzoneData;
+									} else if (PM25Data) {
+										data = PM25Data;
+									} else {
+										data = OzoneData;
+									}
+									console.log("chose: " + data.parameter);
+									var aqi = data.aqi;
+									var category = data.category.toLowerCase();
+									var region = data.reportingArea;
+
+									if (category && aqi) {
+										speechOutput = `Currently, in ${region}, the air quality is ${category}, with an air quality index of ${aqi}.`;
+									} else if (category) {
+										speechOutput = `Currently, in ${region}, the air quality is ${category}.`;
+									} else {
+										speechOutput = "Sorry, I was unable to get the air quality in your location."
+									}
+
+									self.emit(":tell", speechOutput);
+
 								}
 							} else {
 								speechOutput = "Sorry, I was unable to get the air quality in your location."
@@ -148,9 +176,11 @@ const handlers = {
 								}
 
 								var dataFound = false;
+								var PM25Data;
+								var OzoneData;
 								for (var i = 0; i < data.length; i++) {
 									var date = moment(data[i].validDate, "MM-DD-YY");
-									if (queryDay.isSame(date, 'day') && data[i].parameter == "PM2.5") {
+									if (queryDay.isSame(date, 'day') && ((data[i].parameter == "PM2.5" && !PM25Data) || (data[i].parameter == "OZONE" && !OzoneData))) {
 										console.log("queryDay:", queryDay.format());
 										console.log("date:", date.format());
 										var aqi = data[i].aqi;
@@ -158,43 +188,19 @@ const handlers = {
 										var region = data[i].reportingArea;
 										console.log("aqi: " + aqi);
 										console.log("category: " + category);
+										console.log("parameter: " + data[i].parameter);
 										// console.log(data[i]);
-										if (category && aqi) {
-											if (queryDay.isSame(moment(), 'day')) {
-												speechOutput = `Currently, in ${region}, the air quality is ${category}, with an air quality index of ${aqi}.`;
-											} else {
-												if (queryDay.isAfter(today))
-													var tense = "will be";
-												else
-													var tense = "was";
-
-												var speech = new Speech();
-												speech.say("On").sayAs({word: dateSlot.substring(5) + ",", interpret: "date", format: "md"}).say(`in ${region}, the air quality ${tense} ${category}, with an air quality index of ${aqi}.`);
-												speechOutput = speech.ssml(true);
-												// speechOutput = `In ${region}, the air quality will be ${category}, with an air quality index of ${aqi}.`;
-											}
-										} else if (category) {
-											if (queryDay.isSame(moment(), 'day')) {
-												speechOutput = `Currently, in ${region}, the air quality is ${category}.`;
-											} else {
-												if (queryDay.isAfter(today))
-													var tense = "will be";
-												else
-													var tense = "was";
-													
-												var speech = new Speech();
-												speech.say("On").sayAs({word: dateSlot.substring(5) + ",", interpret: "date", format: "md"}).say(`in ${region}, the air quality ${tense} ${category}.`)
-												speechOutput = speech.ssml(true);
-												// speechOutput = `In ${region}, the air quality will be ${category}.`;
-											}
-										} else {
-											continue;
+										if (category && aqi || category) {
+											if (data[i].parameter == "PM2.5")
+												PM25Data = data[i];
+											else
+												OzoneData = data[i];
 										}
 
-										self.emit(":tell", speechOutput);
 
 										dataFound = true;
-										break;
+										if (PM25Data && OzoneData)
+											break;
 									}
 								}
 
@@ -205,6 +211,54 @@ const handlers = {
 										speechOutput = "Sorry, I was unable to get the air quality in your location."
 
 									self.emit(":tell", speechOutput);
+								} else {
+									var data;
+									if (PM25Data && OzoneData && PM25Data.aqi && OzoneData.aqi) {
+										data = PM25Data.aqi >= OzoneData.aqi ? PM25Data : OzoneData;
+									} else if (PM25Data) {
+										data = PM25Data;
+									} else {
+										data = OzoneData;
+									}
+									console.log("chose: " + data.parameter);
+									var aqi = data.aqi;
+									var category = data.category.toLowerCase();
+									var region = data.reportingArea;
+
+									if (category && aqi) {
+										if (queryDay.isSame(moment(), 'day')) {
+											speechOutput = `Currently, in ${region}, the air quality is ${category}, with an air quality index of ${aqi}.`;
+										} else {
+											if (queryDay.isAfter(today))
+												var tense = "will be";
+											else
+												var tense = "was";
+
+											var speech = new Speech();
+											speech.say("On").sayAs({word: dateSlot.substring(5) + ",", interpret: "date", format: "md"}).say(`in ${region}, the air quality ${tense} ${category}, with an air quality index of ${aqi}.`);
+											speechOutput = speech.ssml(true);
+											// speechOutput = `In ${region}, the air quality will be ${category}, with an air quality index of ${aqi}.`;
+										}
+									} else if (category) {
+										if (queryDay.isSame(moment(), 'day')) {
+											speechOutput = `Currently, in ${region}, the air quality is ${category}.`;
+										} else {
+											if (queryDay.isAfter(today))
+												var tense = "will be";
+											else
+												var tense = "was";
+												
+											var speech = new Speech();
+											speech.say("On").sayAs({word: dateSlot.substring(5) + ",", interpret: "date", format: "md"}).say(`in ${region}, the air quality ${tense} ${category}.`)
+											speechOutput = speech.ssml(true);
+											// speechOutput = `In ${region}, the air quality will be ${category}.`;
+										}
+									} else {
+										speechOutput = "Sorry, I was unable to get the air quality in your location."
+									}
+
+									self.emit(":tell", speechOutput);
+
 								}
 							} else {
 								speechOutput = "Sorry, I was unable to get the air quality in your location."
